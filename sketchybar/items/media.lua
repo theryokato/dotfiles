@@ -1,7 +1,22 @@
 local icons = require("icons")
 local colors = require("colors")
 
-local whitelist = { ["Spotify"] = true, ["Music"] = true, ["Cider"] = true, ["Arc"] = true, ["spotify_player"] = true }
+local whitelist = {
+	["Spotify"] = true, ["Music"] = true, ["Cider"] = true, ["Arc"] = true, ["spotify_player"] = true,
+	-- SB-fix: media-control (the macOS 26 media source) reports bundle ids
+	["com.spotify.client"] = true,
+	["com.apple.Music"] = true,
+	["com.ciderstore.Cider"] = true,
+	["company.thebrowser.Browser"] = true,
+}
+
+-- SB-fix: spawn the media-control stream provider (sketchybar's native
+-- media_change is dead on macOS 26; see helpers/media_control.sh).
+-- Kill both the wrapper script AND its media-control child (the child
+-- survives pkill-by-script-name and would orphan otherwise).
+sbar.exec(
+	"pkill -f 'helpers/media_control.sh' 2>/dev/null; pkill -f 'mediaremote-adapter.pl' 2>/dev/null; $CONFIG_DIR/helpers/media_control.sh"
+)
 
 local M = {}
 
@@ -139,14 +154,25 @@ local pause_icon = "􀊆"
 
 M.media_cover:subscribe("media_change", function(env)
 	-- guard: some sources emit media_change without INFO
-	if not env.INFO or not env.INFO.app then
+	if not env.INFO then
 		return
 	end
-	if whitelist[env.INFO.app] then
+	-- SB-fix: media-control reports bundleIdentifier + "playing" boolean;
+	-- keep sketchybar-native schema (app/state) as fallback.
+	local app_key = env.INFO.bundleIdentifier or env.INFO.app
+	if not app_key then
+		return
+	end
+	if whitelist[app_key] then
 		local has_track = env.INFO.title ~= nil and env.INFO.title ~= ""
-		local playing = (env.INFO.state == "playing")
-		-- playing or unknown-state-with-track: show; paused/stopped: hide
-		local drawing = has_track and (playing or env.INFO.state == nil)
+		local playing
+		if env.INFO.playing ~= nil then
+			playing = (env.INFO.playing == true or env.INFO.playing == "true" or env.INFO.playing == 1)
+		else
+			playing = (env.INFO.state == "playing") or (env.INFO.state == nil and has_track)
+		end
+		-- playing (or unknown-state-with-track): show; paused/stopped: hide
+		local drawing = has_track and playing
 		M.media_title:set({ drawing = drawing, label = env.INFO.title or "" })
 		M.media_artist:set({ drawing = drawing, label = env.INFO.artist or "" })
 		M.media_album:set({ label = env.INFO.album or "" })

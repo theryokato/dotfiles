@@ -68,19 +68,31 @@ local function renderWorkspace(workspace_index, open_windows, focused_workspaces
 	end
 
 	sbar.animate("sin", 15, function()
+		-- SB-fix (bug 4): highlight is derived here from the batched focused
+		-- workspace, so it updates in real time with every aerospace_focus_change
+		-- refresh instead of depending on the slower exec-on-workspace-change path.
+		local focused_index = tonumber(focused_workspaces)
+		local is_focused = (focused_index == workspace_index)
+
 		for i, visible_workspace in ipairs(visible_workspaces) do
 			if no_app and workspace_index == tonumber(visible_workspace["workspace"]) then
 				local monitor_id = visible_workspace["monitor-appkit-nsscreen-screens-id"]
 				icon_line = " —"
 				workspaces[workspace_index]:set({
-					icon = { drawing = true },
+					icon = { drawing = true, highlight = is_focused },
 					label = {
 						string = icon_line,
 						drawing = true,
+						highlight = is_focused,
 						font = "sketchybar-app-font:Regular:16.0",
 						y_offset = -1,
 					},
-					background = { drawing = true },
+					background = {
+						drawing = true,
+						color = is_focused and 0x20ffffff or colors.transparent,
+						border_width = is_focused and 1 or 0,
+						border_color = colors.aerospace_border_color,
+					},
 					padding_right = 1,
 					padding_left = 1,
 					display = monitor_id,
@@ -89,7 +101,7 @@ local function renderWorkspace(workspace_index, open_windows, focused_workspaces
 			end
 		end
 
-		if no_app and workspace_index ~= tonumber(focused_workspaces) then
+		if no_app and not is_focused then
 			workspaces[workspace_index]:set({
 				icon = { drawing = false },
 				label = { drawing = false },
@@ -104,9 +116,14 @@ local function renderWorkspace(workspace_index, open_windows, focused_workspaces
 		end
 
 		workspaces[workspace_index]:set({
-			icon = { drawing = true },
-			label = { drawing = true, string = icon_line },
-			background = { drawing = true },
+			icon = { drawing = true, highlight = is_focused },
+			label = { drawing = true, string = icon_line, highlight = is_focused },
+			background = {
+				drawing = true,
+				color = is_focused and 0x20ffffff or colors.transparent,
+				border_width = is_focused and 1 or 0,
+				border_color = colors.aerospace_border_color,
+			},
 			padding_right = 1,
 			padding_left = 1,
 		})
@@ -276,25 +293,9 @@ for workspace_index = 1, max_workspaces do
 	-- SB-M-03 fix: focus/display/SPACE_TRIGGER handling moved to the single
 	-- bar-level watcher after the workspace loop (10 duplicated subscriptions
 	-- here previously caused ~30 subprocesses per focus change).
-
-	sbar.exec("aerospace list-workspaces --focused", function(focused_workspace)
-		local focused_index = tonumber(focused_workspace)
-		-- Letter workspaces have no bar item; skip them
-		if not focused_index or not workspaces[focused_index] then
-			return
-		end
-		sbar.animate("sin", 15, function()
-			workspaces[tonumber(focused_workspace)]:set({
-				icon = { highlight = true },
-				label = { highlight = true },
-				background = {
-					color = 0x20ffffff,
-					border_width = 1,
-					border_color = colors.aerospace_border_color,
-				},
-			})
-		end)
-	end)
+	-- SB-fix (bug 4): the per-workspace startup highlight block was removed —
+	-- the watcher's updateAllWorkspaces() sets the focused highlight (this also
+	-- drops 10 redundant `aerospace list-workspaces --focused` calls at load).
 end
 
 -- SB-M-03 fix: single bar-level watcher consolidates the events that were
