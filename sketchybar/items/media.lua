@@ -8,6 +8,7 @@ local whitelist = {
 	["com.apple.Music"] = true,
 	["com.ciderstore.Cider"] = true,
 	["company.thebrowser.Browser"] = true,
+	["com.brave.Browser"] = true,
 }
 
 -- SB-fix: spawn the media-control stream provider (sketchybar's native
@@ -24,7 +25,7 @@ sbar.add("item", {
 	width = 5,
 })
 
-M.media_cover = sbar.add("item", {
+M.media_cover = sbar.add("item", "media.cover", {
 	position = "left",
 	background = {
 		image = {
@@ -152,7 +153,12 @@ M.media_bracket = sbar.add("bracket", { M.media_cover.name, M.media_artist.name,
 local play_icon = "􀊄"
 local pause_icon = "􀊆"
 
-M.media_cover:subscribe("media_change", function(env)
+-- Custom event: sketchybar swallows external triggers of its built-in
+-- media_change event (its internal media subsystem is dead on macOS 26),
+-- so the provider re-emits as media_update (proven deliverable).
+sbar.add("event", "media_update")
+
+M.media_cover:subscribe({ "media_change", "media_update" }, function(env)
 	-- guard: some sources emit media_change without INFO
 	if not env.INFO then
 		return
@@ -164,6 +170,20 @@ M.media_cover:subscribe("media_change", function(env)
 		return
 	end
 	if whitelist[app_key] then
+		-- SB-fix: with a custom event, artwork arrives as a decoded file path
+		-- (the "media.artwork" placeholder only works for sketchybar's internal
+		-- media_change machinery). Only use it when the file has content.
+		local artwork_path = env.INFO.artwork_path
+		if type(artwork_path) == "string" and #artwork_path > 0 then
+			local af = io.open(artwork_path, "rb")
+			local size = af and af:seek("end") or 0
+			if af then
+				af:close()
+			end
+			if size > 0 then
+				M.media_cover:set({ background = { image = { string = artwork_path } } })
+			end
+		end
 		local has_track = env.INFO.title ~= nil and env.INFO.title ~= ""
 		local playing
 		if env.INFO.playing ~= nil then
