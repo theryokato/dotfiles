@@ -11,10 +11,10 @@ M.battery = sbar.add("item", "widgets.battery", {
 	icon = {
 		font = {
 			style = settings.font.style_map["Regular"],
-			size = 19.0,
+			size = 15.0,
 		},
 	},
-	label = { font = { family = settings.font.numbers } },
+	label = { font = { family = settings.font.numbers, size = 12.0 } },
 	update_freq = 120,
 })
 

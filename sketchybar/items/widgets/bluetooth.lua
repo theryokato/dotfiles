@@ -71,7 +71,7 @@ blueutil --paired | jq -Rn '
 ]'
 ]]
 
-local popup_width = 250
+local popup_width = 220
 
 local B = {}
 
@@ -84,12 +84,12 @@ end
 B.bluetooth_icon = sbar.add("item", {
 	position = "right",
 	padding_left = 0,
-	padding_right = -5,
+	padding_right = 0,
 	icon = {
 		-- string = icons_map["Bluetooth"],
 		-- font = "sketchybar-app-font:Regular:19.0",
 		string = "󰂯",
-		font = { style = settings.font.style_map["Bold"], size = 16.0 },
+		font = { style = settings.font.style_map["Bold"], size = 14.0 },
 	},
 	popup = {
 		align = "center",
