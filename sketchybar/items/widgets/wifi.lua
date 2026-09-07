@@ -8,12 +8,12 @@ sbar.exec(
 	"killall network_load >/dev/null; $CONFIG_DIR/helpers/event_providers/network_load/bin/network_load en0 network_update 2.0"
 )
 local M = {}
-local popup_width = 250
+local popup_width = 220
 
 M.wifi_up = sbar.add("item", "widgets.wifi1", {
 	position = "right",
-	padding_left = -5,
-	padding_right = -3,
+	padding_left = 0,
+	padding_right = 0,
 	width = 0,
 	icon = {
 		padding_right = 0,
@@ -37,8 +37,8 @@ M.wifi_up = sbar.add("item", "widgets.wifi1", {
 
 M.wifi_down = sbar.add("item", "widgets.wifi2", {
 	position = "right",
-	padding_left = -5,
-	padding_right = -3,
+	padding_left = 0,
+	padding_right = 0,
 	icon = {
 		padding_right = 0,
 		font = {
@@ -63,6 +63,7 @@ M.wifi = sbar.add("item", "widgets.wifi.padding", {
 	position = "right",
 	padding_left = 2,
 	label = { drawing = false },
+	icon = { font = { size = 13.0 } },
 })
 
 -- Background around the item

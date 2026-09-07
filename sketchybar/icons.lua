@@ -62,6 +62,12 @@ local icons = {
 			back = "􀊊",
 			forward = "􀊌",
 			play_pause = "􀊈",
+			-- Correct transport symbols (verified against the SF Pro glyph set):
+			-- play.fill / pause.fill / backward.end.fill / forward.end.fill
+			play = "\u{100284}",
+			pause = "\u{100286}",
+			prev = "\u{10028E}",
+			next = "\u{100290}",
 		},
 		tempture = {
 			tempture_icon_1 = "󱤋",

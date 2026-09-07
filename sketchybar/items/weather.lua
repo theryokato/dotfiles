@@ -3,7 +3,7 @@ local icons = require("icons")
 local settings = require("settings")
 
 local M = {}
-local popup_width = 210
+local popup_width = 220
 
 -- ---------------------------------------------------------------------------
 -- F5: weather — Open-Meteo (no API key, reliable, lat/lon based)
@@ -90,8 +90,8 @@ end
 -- ---------------------------------------------------------------------------
 M.weather_icon = sbar.add("item", "widgets.weather", {
 	position = "right",
-	padding_left = -5,
-	padding_right = -3,
+	padding_left = 2,
+	padding_right = 2,
 	icon = {
 		font = {
 			style = settings.font.style_map["Regular"],

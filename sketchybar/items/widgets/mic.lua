@@ -9,7 +9,7 @@ local settings = require("settings")
 -- widget deliberately does NOT claim one. No audio is ever read or recorded.
 
 local M = {}
-local popup_width = 210
+local popup_width = 220
 
 -- "device name\nvolume" in one spawn
 local MIC_INFO_CMD = [[
@@ -24,7 +24,7 @@ M.mic = sbar.add("item", "widgets.mic", {
 	position = "right",
 	icon = {
 		string = mic_icon_glyph,
-		font = { size = 12.0 },
+		font = { size = 13.0 },
 		color = colors.white,
 	},
 	label = {
