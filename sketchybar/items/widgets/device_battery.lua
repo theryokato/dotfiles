@@ -134,6 +134,13 @@ local function update_devices()
 
 		remove_entries()
 
+		local primary = battery_devices[1]
+		D.devices:set({
+			drawing = true,
+			icon = { string = ICON_BY_TYPE[primary.minor] or DEFAULT_ICON },
+			label = { string = primary.min .. "%" },
+		})
+
 		-- popup rows: one name row per device + detail rows for AirPods-style data
 		for i, dev in ipairs(battery_devices) do
 			sbar.add("item", "devices.entry." .. i .. ".name", {
@@ -197,6 +204,14 @@ end)
 
 D.devices:subscribe("mouse.exited.global", function()
 	D.devices:set({ popup = { drawing = false } })
+	-- SB-fix: refresh now that the popup is closed (safe to rebuild entries),
+	-- so the next open shows fresh values without rebuilding under the cursor.
+	update_devices()
 end)
+
+-- SB-fix: run one update immediately at load. Previously the item stayed
+-- drawing=false until the first 150s routine tick (or a click-time refresh,
+-- which the popup fix removed), so the widget appeared to be gone.
+update_devices()
 
 return D

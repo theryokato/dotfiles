@@ -216,7 +216,7 @@ local function updateWorkspaceHover(workspace_index, trigger)
 end
 
 for workspace_index = 1, max_workspaces do
-	local workspace = sbar.add("item", {
+	local workspace = sbar.add("item", "workspace." .. workspace_index, {
 		icon = {
 			color = colors.aerospace_label_color, -- unfocused: dim grey
 			highlight_color = colors.aerospace_icon_highlight_color, -- focused: light grey
