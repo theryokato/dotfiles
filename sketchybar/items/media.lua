@@ -65,13 +65,31 @@ M.media_title = sbar.add("item", {
 	},
 })
 
+-- SB-F2: album row shown as the first popup child
+M.media_album = sbar.add("item", {
+	position = "popup." .. M.media_cover.name,
+	icon = {
+		string = "♪",
+		font = { size = 9 },
+		color = colors.orange,
+	},
+	label = {
+		font = { size = 9 },
+		color = colors.orange,
+		max_chars = 16,
+		width = 90,
+		align = "left",
+	},
+})
+
 sbar.add("item", {
 	position = "popup." .. M.media_cover.name,
 	icon = { string = icons.media.back },
 	label = { drawing = false },
 	click_script = "nowplaying-cli previous",
 })
-sbar.add("item", {
+-- SB-F2: named play/pause so its icon can reflect state; Next; Open Spotify
+M.playpause = sbar.add("item", {
 	position = "popup." .. M.media_cover.name,
 	icon = { string = icons.media.play_pause },
 	label = { drawing = false },
@@ -82,6 +100,12 @@ sbar.add("item", {
 	icon = { string = icons.media.forward },
 	label = { drawing = false },
 	click_script = "nowplaying-cli next",
+})
+sbar.add("item", {
+	position = "popup." .. M.media_cover.name,
+	icon = { string = "♫", font = { size = 10 } },
+	label = { drawing = false },
+	click_script = "open -a Spotify",
 })
 
 local interrupt = 0
@@ -109,11 +133,24 @@ M.media_bracket = sbar.add("bracket", { M.media_cover.name, M.media_artist.name,
 	},
 })
 
+-- SB-F2: SF Symbol glyphs for playback state (play.fill / pause.fill)
+local play_icon = "􀊄"
+local pause_icon = "􀊆"
+
 M.media_cover:subscribe("media_change", function(env)
+	-- guard: some sources emit media_change without INFO
+	if not env.INFO or not env.INFO.app then
+		return
+	end
 	if whitelist[env.INFO.app] then
-		local drawing = (env.INFO.state == "playing")
-		M.media_title:set({ drawing = drawing, label = env.INFO.title })
-		M.media_artist:set({ drawing = drawing, label = env.INFO.artist })
+		local has_track = env.INFO.title ~= nil and env.INFO.title ~= ""
+		local playing = (env.INFO.state == "playing")
+		-- playing or unknown-state-with-track: show; paused/stopped: hide
+		local drawing = has_track and (playing or env.INFO.state == nil)
+		M.media_title:set({ drawing = drawing, label = env.INFO.title or "" })
+		M.media_artist:set({ drawing = drawing, label = env.INFO.artist or "" })
+		M.media_album:set({ label = env.INFO.album or "" })
+		M.playpause:set({ icon = { string = playing and pause_icon or play_icon } })
 		M.media_cover:set({ drawing = drawing })
 
 		if drawing then

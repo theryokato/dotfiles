@@ -35,8 +35,10 @@ sbar.add("bracket", {
 	volume.volume_percent.name,
 	bluetooth.bluetooth_icon.name,
 	cal.cal.name,
+	"cal.upcoming",
 	weather.weather_icon.name,
 	battery.battery.name,
+	"widgets.devices",
 }, { background = glass_capsule })
 
 -- Left glass capsule (Apple icon + workspaces)
