@@ -21,209 +21,303 @@ sbar.exec(
 
 local M = {}
 
-sbar.add("item", {
-	width = 5,
-})
+-- ---------------------------------------------------------------------------
+-- UX design (rev 2):
+--   bar    : glyph + fixed-width scrolling title/artist - NO artwork on the
+--            bar; stays visible while paused (dimmed) so the layout never
+--            jumps; the glyph is a direct play/pause toggle.
+--   popup  : artwork thumbnail (fixed 32px box), title / artist-album
+--            (scrolling), working transport buttons (media-control -
+--            nowplaying-cli is dead on macOS 26), elapsed/duration, and an
+--            "Open <app>" control driven by the playing bundle id.
+-- ---------------------------------------------------------------------------
 
-M.media_cover = sbar.add("item", "media.cover", {
+local BAR_TITLE_WIDTH = 130
+local BAR_ARTIST_WIDTH = 100
+local POPUP_TEXT_WIDTH = 120
+
+-- dimmed palette for the paused state
+local dim_white = colors.with_alpha(colors.white, 0.45)
+local dim_grey = colors.with_alpha(colors.grey, 0.45)
+local dim_orange = colors.with_alpha(colors.orange, 0.45)
+
+local play_icon = "\u{0001004C4}"
+local pause_icon = "\u{0001004C6}"
+
+local current_app = nil
+
+sbar.add("item", { width = 5 })
+
+-- Anchor: shows play/pause glyph, toggles playback on click, hosts the popup
+M.media_anchor = sbar.add("item", "media.anchor", {
 	position = "left",
-	background = {
-		image = {
-			string = "media.artwork",
-			scale = 0.85,
-			-- corner_radius = 10,
-		},
-		color = colors.transparent,
-		-- corner_radius = 10,
+	icon = {
+		string = play_icon,
+		font = { size = 13 },
+		color = colors.white,
 	},
 	label = { drawing = false },
-	icon = { drawing = false },
 	drawing = false,
 	updates = true,
-	popup = {
-		align = "center",
-		horizontal = true,
-	},
-	padding_right = -2,
-	padding_left = -0.5,
+	click_script = "media-control toggle-play-pause",
+	padding_right = 2,
+	popup = { align = "left", horizontal = true },
 })
 
-M.media_artist = sbar.add("item", {
+M.media_title = sbar.add("item", "media.title", {
 	position = "left",
 	drawing = false,
-	padding_left = 3,
+	padding_left = 4,
 	padding_right = 0,
-	width = 0,
 	icon = { drawing = false },
+	scroll_texts = true,
 	label = {
-		width = 0,
-		font = { size = 9 },
-		-- color = colors.with_alpha(colors.white, 0.6),
-		color = colors.orange,
-		max_chars = 18,
+		string = "",
+		width = BAR_TITLE_WIDTH,
+		align = "left",
+		font = { size = 10 },
+		color = colors.white,
 		y_offset = 6,
 	},
 })
 
-M.media_title = sbar.add("item", {
+M.media_artist = sbar.add("item", "media.artist", {
 	position = "left",
 	drawing = false,
-	padding_left = 3,
+	padding_left = 0,
 	padding_right = 0,
 	icon = { drawing = false },
+	scroll_texts = true,
 	label = {
-		-- color = colors.with_alpha(colors.white, 0.6),
-		color = colors.orange,
-		font = { size = 11 },
-		width = 0,
-		max_chars = 16,
-		y_offset = -5,
-	},
-})
-
--- SB-F2: album row shown as the first popup child
-M.media_album = sbar.add("item", {
-	position = "popup." .. M.media_cover.name,
-	icon = {
-		string = "♪",
-		font = { size = 9 },
-		color = colors.orange,
-	},
-	label = {
-		font = { size = 9 },
-		color = colors.orange,
-		max_chars = 16,
-		width = 90,
+		string = "",
+		width = BAR_ARTIST_WIDTH,
 		align = "left",
+		font = { size = 9 },
+		color = colors.grey,
+		y_offset = -6,
 	},
 })
 
-sbar.add("item", {
-	position = "popup." .. M.media_cover.name,
-	icon = { string = icons.media.back },
-	label = { drawing = false },
-	click_script = "nowplaying-cli previous",
-})
--- SB-F2: named play/pause so its icon can reflect state; Next; Open Spotify
-M.playpause = sbar.add("item", {
-	position = "popup." .. M.media_cover.name,
-	icon = { string = icons.media.play_pause },
-	label = { drawing = false },
-	click_script = "nowplaying-cli togglePlayPause",
-})
-sbar.add("item", {
-	position = "popup." .. M.media_cover.name,
-	icon = { string = icons.media.forward },
-	label = { drawing = false },
-	click_script = "nowplaying-cli next",
-})
-sbar.add("item", {
-	position = "popup." .. M.media_cover.name,
-	icon = { string = "♫", font = { size = 10 } },
-	label = { drawing = false },
-	click_script = "open -a Spotify",
-})
-
-local interrupt = 0
-local function animate_detail(detail)
-	if not detail then
-		interrupt = interrupt - 1
-	end
-	if interrupt > 0 and not detail then
-		return
-	end
-
-	sbar.animate("tanh", 30, function()
-		M.media_artist:set({ label = { width = detail and "dynamic" or 0 } })
-		M.media_title:set({ label = { width = detail and "dynamic" or 0 } })
-		return
-	end)
-end
-
-M.media_bracket = sbar.add("bracket", { M.media_cover.name, M.media_artist.name, M.media_title.name }, {
+M.media_bracket = sbar.add("bracket", { M.media_anchor.name, M.media_title.name, M.media_artist.name }, {
 	background = {
-		-- padding_right = -20,
 		padding_left = 0,
 		color = colors.bg3,
 		border_width = 0,
 	},
 })
 
--- SB-F2: SF Symbol glyphs for playback state (play.fill / pause.fill)
-local play_icon = "􀊄"
-local pause_icon = "􀊆"
+-- ---------------------------------------------------------------------------
+-- Popup
+-- ---------------------------------------------------------------------------
+M.popup_art = sbar.add("item", "media.popup.art", {
+	position = "popup." .. M.media_anchor.name,
+	width = 32,
+	background = {
+		height = 26,
+		color = colors.transparent,
+		border_width = 0,
+		image = {
+			string = "",
+			scale = 0.18, -- ~150px source artwork -> ~27px inside the 32px box
+			corner_radius = 6,
+		},
+	},
+	label = { drawing = false },
+	icon = { drawing = false },
+	click_script = "open -b com.spotify.client", -- replaced dynamically per app
+})
 
--- Custom event: sketchybar swallows external triggers of its built-in
--- media_change event (its internal media subsystem is dead on macOS 26),
--- so the provider re-emits as media_update (proven deliverable).
-sbar.add("event", "media_update")
+M.popup_title = sbar.add("item", "media.popup.title", {
+	position = "popup." .. M.media_anchor.name,
+	padding_left = 4,
+	padding_right = 0,
+	icon = { drawing = false },
+	scroll_texts = true,
+	label = {
+		string = "",
+		width = POPUP_TEXT_WIDTH,
+		align = "left",
+		font = { size = 10 },
+		color = colors.white,
+		y_offset = 5,
+	},
+})
 
-M.media_cover:subscribe({ "media_change", "media_update" }, function(env)
-	-- guard: some sources emit media_change without INFO
+M.popup_artist = sbar.add("item", "media.popup.artist", {
+	position = "popup." .. M.media_anchor.name,
+	padding_left = 4,
+	padding_right = 0,
+	icon = { drawing = false },
+	scroll_texts = true,
+	label = {
+		string = "",
+		width = POPUP_TEXT_WIDTH,
+		align = "left",
+		font = { size = 8 },
+		color = colors.grey,
+		y_offset = -5,
+	},
+})
+
+sbar.add("item", "media.popup.prev", {
+	position = "popup." .. M.media_anchor.name,
+	icon = { string = icons.media.back },
+	label = { drawing = false },
+	click_script = "media-control previous-track",
+})
+M.playpause = sbar.add("item", "media.popup.playpause", {
+	position = "popup." .. M.media_anchor.name,
+	icon = { string = play_icon },
+	label = { drawing = false },
+	click_script = "media-control toggle-play-pause",
+})
+sbar.add("item", "media.popup.next", {
+	position = "popup." .. M.media_anchor.name,
+	icon = { string = icons.media.forward },
+	label = { drawing = false },
+	click_script = "media-control next-track",
+})
+
+M.popup_time = sbar.add("item", "media.popup.time", {
+	position = "popup." .. M.media_anchor.name,
+	icon = { drawing = false },
+	label = {
+		string = "",
+		width = 52,
+		align = "center",
+		font = { size = 8 },
+		color = colors.grey,
+	},
+})
+
+M.popup_openapp = sbar.add("item", "media.popup.openapp", {
+	position = "popup." .. M.media_anchor.name,
+	icon = { drawing = false },
+	label = {
+		string = "",
+		width = 64,
+		align = "center",
+		font = { size = 8 },
+		color = colors.grey,
+	},
+	click_script = "open -b com.spotify.client", -- replaced dynamically per app
+})
+
+local function fmt_time(sec)
+	sec = math.floor(tonumber(sec) or 0)
+	return string.format("%d:%02d", sec // 60, sec % 60)
+end
+
+local function short_app_name(bundle)
+	local names = {
+		["com.spotify.client"] = "Spotify",
+		["com.apple.Music"] = "Music",
+		["com.ciderstore.Cider"] = "Cider",
+		["company.thebrowser.Browser"] = "Arc",
+		["com.brave.Browser"] = "Brave",
+	}
+	return names[bundle] or bundle:match("[%w%s]+$") or "Open"
+end
+
+M.media_anchor:subscribe({ "media_change", "media_update" }, function(env)
 	if not env.INFO then
 		return
 	end
-	-- SB-fix: media-control reports bundleIdentifier + "playing" boolean;
-	-- keep sketchybar-native schema (app/state) as fallback.
 	local app_key = env.INFO.bundleIdentifier or env.INFO.app
-	if not app_key then
+	if not app_key or not whitelist[app_key] then
 		return
 	end
-	if whitelist[app_key] then
-		-- SB-fix: with a custom event, artwork arrives as a decoded file path
-		-- (the "media.artwork" placeholder only works for sketchybar's internal
-		-- media_change machinery). Only use it when the file has content.
-		local artwork_path = env.INFO.artwork_path
-		if type(artwork_path) == "string" and #artwork_path > 0 then
-			local af = io.open(artwork_path, "rb")
-			local size = af and af:seek("end") or 0
-			if af then
-				af:close()
-			end
-			if size > 0 then
-				M.media_cover:set({ background = { image = { string = artwork_path } } })
-			end
-		end
-		local has_track = env.INFO.title ~= nil and env.INFO.title ~= ""
-		local playing
-		if env.INFO.playing ~= nil then
-			playing = (env.INFO.playing == true or env.INFO.playing == "true" or env.INFO.playing == 1)
-		else
-			playing = (env.INFO.state == "playing") or (env.INFO.state == nil and has_track)
-		end
-		-- playing (or unknown-state-with-track): show; paused/stopped: hide
-		local drawing = has_track and playing
-		M.media_title:set({ drawing = drawing, label = env.INFO.title or "" })
-		M.media_artist:set({ drawing = drawing, label = env.INFO.artist or "" })
-		M.media_album:set({ label = env.INFO.album or "" })
-		M.playpause:set({ icon = { string = playing and pause_icon or play_icon } })
-		M.media_cover:set({ drawing = drawing })
 
-		if drawing then
-			animate_detail(true)
-			interrupt = interrupt + 1
-			sbar.delay(5, animate_detail)
-		else
-			M.media_cover:set({ popup = { drawing = false } })
+	current_app = app_key
+	local info = env.INFO
+	local has_track = info.title ~= nil and info.title ~= ""
+
+	if not has_track then
+		-- nothing to show at all
+		M.media_anchor:set({ drawing = false })
+		M.media_title:set({ drawing = false })
+		M.media_artist:set({ drawing = false })
+		return
+	end
+
+	local playing
+	if info.playing ~= nil then
+		playing = (info.playing == true or info.playing == "true" or info.playing == 1)
+	else
+		playing = (info.state == "playing") or (info.state == nil)
+	end
+
+	-- Paused: keep visible but dimmed so the bar layout never jumps and
+	-- playback can be resumed directly from the bar.
+	local title_color = playing and colors.white or dim_white
+	local artist_color = playing and colors.grey or dim_grey
+	local anchor_color = playing and colors.white or dim_orange
+
+	-- artwork: popup thumbnail only (no image on the bar anymore)
+	local artwork_path = info.artwork_path
+	if type(artwork_path) == "string" and #artwork_path > 0 then
+		local af = io.open(artwork_path, "rb")
+		local size = af and af:seek("end") or 0
+		if af then
+			af:close()
+		end
+		if size > 0 then
+			M.popup_art:set({ background = { image = { string = artwork_path } } })
 		end
 	end
+
+	-- bar text
+	M.media_title:set({
+		drawing = true,
+		label = { string = info.title or "", color = title_color },
+	})
+	M.media_artist:set({
+		drawing = true,
+		label = { string = info.artist or "", color = artist_color },
+	})
+	M.media_anchor:set({
+		drawing = true,
+		icon = { string = playing and pause_icon or play_icon, color = anchor_color },
+	})
+
+	-- popup contents
+	M.popup_title:set({ label = { string = info.title or "" } })
+	local artist_line = info.artist or ""
+	if info.album ~= nil and info.album ~= "" then
+		artist_line = artist_line .. " \u{2014} " .. info.album
+	end
+	M.popup_artist:set({ label = { string = artist_line } })
+	M.playpause:set({ icon = { string = playing and pause_icon or play_icon } })
+
+	local elapsed = info.elapsedTime
+	local duration = info.duration
+	if elapsed and duration then
+		M.popup_time:set({ label = { string = fmt_time(elapsed) .. "/" .. fmt_time(duration) } })
+	elseif duration then
+		M.popup_time:set({ label = { string = "-:--/" .. fmt_time(duration) } })
+	else
+		M.popup_time:set({ label = { string = "" } })
+	end
+
+	M.popup_openapp:set({
+		label = { string = short_app_name(app_key) },
+		click_script = "open -b " .. app_key,
+	})
+	M.popup_art:set({
+		click_script = "open -b " .. app_key,
+	})
 end)
 
-M.media_cover:subscribe("mouse.entered", function(env)
-	interrupt = interrupt + 1
-	animate_detail(true)
+M.media_title:subscribe("mouse.clicked", function()
+	M.media_anchor:set({ popup = { drawing = "toggle" } })
 end)
 
-M.media_cover:subscribe("mouse.exited", function(env)
-	animate_detail(false)
+M.media_artist:subscribe("mouse.clicked", function()
+	M.media_anchor:set({ popup = { drawing = "toggle" } })
 end)
 
-M.media_cover:subscribe("mouse.clicked", function(env)
-	M.media_cover:set({ popup = { drawing = "toggle" } })
-end)
-
-M.media_title:subscribe("mouse.exited.global", function(env)
-	M.media_cover:set({ popup = { drawing = false } })
+M.popup_artist:subscribe("mouse.exited.global", function()
+	M.media_anchor:set({ popup = { drawing = false } })
 end)
 
 return M
