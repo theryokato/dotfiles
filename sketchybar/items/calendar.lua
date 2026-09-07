@@ -6,10 +6,8 @@ local M = {}
 -- ---------------------------------------------------------------------------
 -- Main clock/date item (behavior preserved)
 -- ---------------------------------------------------------------------------
-local function dbglog(msg)
 	local f = io.open("/tmp/sb_cal_dbg.log", "a")
 	if f then f:write(os.date("%H:%M:%S ") .. msg .. "\n") f:close() end
-end
 
 M.cal = sbar.add("item", "cal", {
 	icon = {
@@ -132,9 +130,7 @@ local function parse_when(line)
 end
 
 local function fetch_events()
-	dbglog("fetch_events start")
 	sbar.exec(ICAL_CMD, function(output)
-		dbglog("ical callback, output_len=" .. tostring(output and #output or "nil"))
 		if type(output) ~= "string" or output == "" then
 			-- provider failure or genuinely no events; re-render handles both
 			return
@@ -231,17 +227,12 @@ function M.render_upcoming(now)
 	end
 end
 
-local render_tick = 0
 M.upcoming:subscribe({ "routine", "system_woke", "forced" }, function()
-	dbglog("upcoming tick, events=" .. #events)
 	-- every 5th minute-level tick (i.e. ~every 5 min) re-fetch from icalBuddy;
 	-- otherwise re-render the countdown locally (cheap, no subprocess)
-	render_tick = (render_tick + 1) % 5
-	if render_tick == 1 or #events == 0 then
-		fetch_events()
-	else
-		M.render_upcoming()
-	end
+	-- re-fetch from icalBuddy every minute (per user request); the fetch
+	-- callback re-renders the countdown with fresh data
+	fetch_events()
 end)
 
 M.upcoming:subscribe("display_change", fetch_events)
