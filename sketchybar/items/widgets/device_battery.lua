@@ -111,17 +111,28 @@ local function update_devices()
 		remove_entries()
 
 		if #battery_devices == 0 then
-			-- nothing connected with battery data: hide entirely
-			D.devices:set({ drawing = false, popup = { drawing = false } })
+			-- nothing connected with battery data: hide the item, but never
+			-- touch an open popup from an async refresh
+			if D.devices:query().popup.drawing ~= "on" then
+				D.devices:set({ drawing = false })
+			end
 			return
 		end
 
-		local primary = battery_devices[1]
-		D.devices:set({
-			drawing = true,
-			icon = { string = ICON_BY_TYPE[primary.minor] or DEFAULT_ICON },
-			label = { string = primary.min .. "%" },
-		})
+		-- SB-fix: never rebuild popup entries while the popup is open. Removing
+		-- rows under the cursor collapses the popup, mouse.exited.global fires
+		-- and closes it permanently (the "shows for a split second" bug).
+		if D.devices:query().popup.drawing == "on" then
+			local primary = battery_devices[1]
+			D.devices:set({
+				drawing = true,
+				icon = { string = ICON_BY_TYPE[primary.minor] or DEFAULT_ICON },
+				label = { string = primary.min .. "%" },
+			})
+			return
+		end
+
+		remove_entries()
 
 		-- popup rows: one name row per device + detail rows for AirPods-style data
 		for i, dev in ipairs(battery_devices) do
@@ -177,13 +188,11 @@ end
 D.devices:subscribe({ "routine", "forced", "system_woke", "bluetooth_change" }, update_devices)
 
 D.devices:subscribe("mouse.clicked", function()
-	local should_draw = D.devices:query().popup.drawing == "off"
+	-- SB-fix: open the popup from cached rows and do NOT re-query here.
+	-- The old behavior bypassed the cooldown and rebuilt entries under the
+	-- cursor ~1-2s later, collapsing the popup. Data is at most 150s old
+	-- (update_freq) and refreshes on routine/bluetooth_change while closed.
 	D.devices:set({ popup = { drawing = "toggle" } })
-	if should_draw then
-		-- refresh on open so values are never stale (user-initiated: bypass cooldown)
-		last_update = 0
-		update_devices()
-	end
 end)
 
 D.devices:subscribe("mouse.exited.global", function()

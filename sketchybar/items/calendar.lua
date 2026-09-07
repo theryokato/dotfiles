@@ -172,7 +172,9 @@ M.upcoming = sbar.add("item", "cal.upcoming", {
 })
 
 local ICAL_CMD =
-	"icalBuddy -nc -f -iep 'title,datetime' -b '' -ss '' -tf '%H:%M' -df '%b %d' -li 12 eventsToday+2"
+	-- SB-fix: exclude holiday calendars (their all-day events otherwise become
+	-- the "next event", e.g. Labor Day covering real events)
+	"icalBuddy -nc -f -ec 'Holidays in United States,Japan Holidays' -iep 'title,datetime' -b '' -ss '' -tf '%H:%M' -df '%b %d' -li 12 eventsToday+2"
 
 local REL_DAY = { ["today"] = 0, ["tomorrow"] = 1, ["day after tomorrow"] = 2 }
 local MONTHS = {
