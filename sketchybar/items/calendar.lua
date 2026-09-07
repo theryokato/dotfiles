@@ -6,8 +6,6 @@ local M = {}
 -- ---------------------------------------------------------------------------
 -- Main clock/date item (behavior preserved)
 -- ---------------------------------------------------------------------------
-	local f = io.open("/tmp/sb_cal_dbg.log", "a")
-	if f then f:write(os.date("%H:%M:%S ") .. msg .. "\n") f:close() end
 
 M.cal = sbar.add("item", "cal", {
 	icon = {
