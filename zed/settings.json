@@ -1,0 +1,92 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "terminal": {
+    "font_family": "FiraCode Nerd Font Mono"
+  },
+  "proxy": "",
+  "cli_default_open_behavior": "new_window",
+  "context_servers": {
+    "mcp-server-exa-search": {
+      "enabled": true,
+      "remote": false,
+      "settings": {
+        "exa_api_key": null
+      }
+    }
+  },
+  "icon_theme": "Catppuccin Frappé",
+  "agent": {
+    "default_profile": "write",
+    "default_model": {
+      "provider": "ollama",
+      "model": "gemma4:31b-cloud",
+      "enable_thinking": true
+    },
+    "dock": "right",
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "edit_predictions": {
+    "ollama": {
+      "max_output_tokens": 64,
+      "model": "gemma4:31b-cloud"
+    },
+    "provider": "copilot"
+  },
+  "markdown_preview_font_size": 15.0,
+  "buffer_font_weight": 400.0,
+  "project_panel": {
+    "entry_spacing": "comfortable",
+    "dock": "left"
+  },
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false,
+    "anthropic_retention": false
+  },
+  "minimap": {
+    "show": "always"
+  },
+  "buffer_font_family": ".ZedMono",
+  "agent_servers": {
+    "github-copilot-cli": {
+      "type": "registry"
+    },
+    "Cline": {
+          "default_config_options": {
+             "auto_approve": true
+          },
+          "type": "custom",
+          "command": "cline",
+          "args": ["--acp"],
+          "env": {}
+        }
+  },
+  "base_keymap": "VSCode",
+  "ui_font_size": 15.0,
+  "buffer_font_size": 13.0,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Catppuccin Frappé",
+  },
+    "languages": {
+      "Python": {
+        "language_servers": [
+          // Enable ty, disable basedpyright, and enable all
+          // other registered language servers (ruff, pylsp, pyright).
+          "ty",
+          "ruff"
+        ]
+      }
+
+  }
+
+}

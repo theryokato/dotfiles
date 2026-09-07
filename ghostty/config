@@ -1,0 +1,5 @@
+theme = catppuccin-macchiato.conf
+font-family = FiraCode Nerd Font
+macos-titlebar-style = hidden
+window-padding-x = 10
+cursor-style = bar

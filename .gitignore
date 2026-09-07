@@ -1,0 +1,14 @@
+# credential-bearing directories — NEVER commit
+gh/
+github-copilot/
+configstore/
+gnupg/
+gpg/
+
+# machine-local noise / rebuildable binaries
+.DS_Store
+wallpapers/
+sketchybar/helpers/event_providers/bin/
+sketchybar/helpers/menus/bin/
+sketchybar/helpers/event_providers/cpu_load/bin/
+sketchybar/helpers/event_providers/network_load/bin/
