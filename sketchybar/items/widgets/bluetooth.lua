@@ -74,6 +74,13 @@ blueutil --paired | jq -Rn '
 local popup_width = 250
 
 local B = {}
+
+-- SB-M-02 companion hardening: quote values interpolated into click_script.
+-- device.address comes from parsing human-readable blueutil output, so quote
+-- it defensively before embedding it in a shell string.
+local function shell_quote(s)
+	return "'" .. s:gsub("'", "'\\''") .. "'"
+end
 B.bluetooth_icon = sbar.add("item", {
 	position = "right",
 	padding_left = 0,
@@ -195,11 +202,11 @@ local function bluetooth_deivce_list()
 						width = popup_width,
 						align = "center",
 						click_script = "if [ $(blueutil --is-connected "
-							.. device.address
+							.. shell_quote(device.address)
 							.. ") -eq 1 ]; then blueutil --disconnect "
-							.. device.address
+							.. shell_quote(device.address)
 							.. "; else blueutil --connect "
-							.. device.address
+							.. shell_quote(device.address)
 							-- .. " && sketchybar --set /bluetooth.device\\.*/ label.color="
 							-- .. colors.white
 							.. "; fi",
