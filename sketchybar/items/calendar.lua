@@ -151,4 +151,130 @@ end)
 -- 	M.cal:set({ popup = { drawing = false } })
 -- end)
 
+-- ---------------------------------------------------------------------------
+-- SB-F1: compact upcoming-event item (icalBuddy)
+-- Privacy: only title + datetime are ever requested (-iep title,datetime);
+-- notes, locations, attendees and URLs are never fetched or displayed.
+-- ---------------------------------------------------------------------------
+M.upcoming = sbar.add("item", "cal.upcoming", {
+	position = "right",
+	icon = { drawing = false },
+	label = {
+		color = colors.white,
+		font = { family = settings.font.numbers },
+		max_chars = 22,
+		padding_left = 4,
+		padding_right = 2,
+	},
+	update_freq = 120,
+	drawing = false,
+	click_script = "open -a Calendar",
+})
+
+local ICAL_CMD =
+	"icalBuddy -nc -f -iep 'title,datetime' -b '' -ss '' -tf '%H:%M' -df '%b %d' -li 12 eventsToday+2"
+
+local REL_DAY = { ["today"] = 0, ["tomorrow"] = 1, ["day after tomorrow"] = 2 }
+local MONTHS = {
+	Jan = 1, Feb = 2, Mar = 3, Apr = 4, May = 5, Jun = 6,
+	Jul = 7, Aug = 8, Sep = 9, Oct = 10, Nov = 11, Dec = 12,
+}
+
+local function midnight(offset_days)
+	local now = os.date("*t")
+	return os.time({ year = now.year, month = now.month, day = now.day + offset_days, hour = 0, min = 0, sec = 0 })
+end
+
+-- Parses an icalBuddy datetime line. Returns start_t, end_t, is_all_day, day_offset.
+local function parse_when(line)
+	-- note: Lua patterns have no alternation, so match each relative day explicitly
+	local times = line:match("^day after tomorrow%s+at%s+(.+)$")
+	local day = times and "day after tomorrow"
+	if not day then
+		times = line:match("^tomorrow%s+at%s+(.+)$")
+		day = times and "tomorrow"
+	end
+	if not day then
+		times = line:match("^today%s+at%s+(.+)$")
+		day = times and "today"
+	end
+	local offset
+	if day then
+		offset = REL_DAY[day]
+	else
+		local mon, d, abs_times = line:match("^(%a+)%s+(%d+),?%s+at%s+(.+)$")
+		if mon and MONTHS[mon] and abs_times then
+			local now = os.date("*t")
+			local base = os.time({ year = now.year, month = MONTHS[mon], day = tonumber(d), hour = 0, min = 0 })
+			offset = math.floor((base - midnight(0)) / 86400)
+			times = abs_times
+		else
+			offset = REL_DAY[line]
+			if offset == nil then
+				return nil
+			end
+			-- all-day event: whole day
+			return midnight(offset), midnight(offset) + 86399, true, offset
+		end
+	end
+
+	local h1, m1, h2, m2 = times:match("^(%d+):(%d+)%s*%-%s*(%d+):(%d+)")
+	if not h1 then
+		return nil
+	end
+	local base = midnight(offset)
+	local start_t = base + tonumber(h1) * 3600 + tonumber(m1) * 60
+	local end_t = base + tonumber(h2) * 3600 + tonumber(m2) * 60
+	-- events crossing midnight: treat end before start as "next day"
+	if end_t < start_t then
+		end_t = end_t + 86400
+	end
+	return start_t, end_t, false, offset
+end
+
+local function update_upcoming()
+	sbar.exec(ICAL_CMD, function(output)
+		if type(output) ~= "string" or output == "" then
+			M.upcoming:set({ drawing = false })
+			return
+		end
+
+		local now = os.time()
+		local clean = output:gsub("\27%[[0-9;]*m", "") -- strip ANSI color codes
+		local title = nil
+		for line in clean:gmatch("[^\r\n]+") do
+			if line:match("^%s") then
+				-- indented line: the datetime of the last seen title
+				local when = line:match("^%s*(.-)%s*$")
+				if title and when then
+					local start_t, end_t, is_all_day, offset = parse_when(when)
+					if start_t and end_t and end_t > now then
+						-- found the next event that has not ended
+						local context
+						if is_all_day then
+							context = (offset == 0) and "today" or os.date("%a", start_t)
+						elseif start_t <= now then
+							-- currently ongoing: show minutes remaining
+							context = math.max(1, math.ceil((end_t - now) / 60)) .. "m left"
+						elseif os.date("%j", start_t) == os.date("%j", now) then
+							context = os.date("%H:%M", start_t)
+						else
+							context = os.date("%a %H:%M", start_t)
+						end
+						M.upcoming:set({ drawing = true, label = title .. " · " .. context })
+						return
+					end
+					title = nil
+				end
+			else
+				title = line:match("^%s*(.-)%s*$")
+			end
+		end
+		-- no upcoming events within the window
+		M.upcoming:set({ drawing = false })
+	end)
+end
+
+M.upcoming:subscribe({ "routine", "forced", "system_woke" }, update_upcoming)
+
 return M
