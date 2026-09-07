@@ -5,6 +5,12 @@ local settings = require("settings")
 local V = {}
 local popup_width = 250
 
+-- SB-M-02 fix: device names (incl. Bonjour/AirPlay names from the LAN) are
+-- attacker-influenced; single-quote them before embedding in click_script.
+local function shell_quote(s)
+	return "'" .. s:gsub("'", "'\\''") .. "'"
+end
+
 V.volume_percent = sbar.add("item", "widgets.volume1", {
 	position = "right",
 	icon = { drawing = false },
@@ -132,9 +138,9 @@ local function volume_toggle_details(env)
 						width = popup_width,
 						align = "center",
 						label = { string = device, color = color },
-						click_script = 'SwitchAudioSource -s "'
-							.. device
-							.. '" && sketchybar --set /volume.device\\.*/ label.color='
+						click_script = "SwitchAudioSource -s "
+							.. shell_quote(device)
+							.. " && sketchybar --set /volume.device\\.*/ label.color="
 							.. colors.grey
 							.. " --set $NAME label.color="
 							.. colors.white,

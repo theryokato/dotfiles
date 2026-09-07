@@ -232,7 +232,14 @@ M.wifi:subscribe("mouse.exited.global", hide_details)
 
 local function copy_label_to_clipboard(env)
 	local label = sbar.query(env.NAME).label.value
-	sbar.exec('echo "' .. label .. '" | pbcopy')
+	-- SB-M-01 fix: pipe the value into pbcopy as data, never as shell text.
+	-- Labels can contain attacker-controlled SSIDs; building a shell string
+	-- from them allowed command injection on click.
+	local pipe = io.popen("pbcopy", "w")
+	if pipe then
+		pipe:write(label)
+		pipe:close()
+	end
 	sbar.set(env.NAME, { label = { string = icons.clipboard, align = "center" } })
 	sbar.delay(1, function()
 		sbar.set(env.NAME, { label = { string = label, align = "right" } })
