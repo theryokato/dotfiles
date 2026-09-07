@@ -2,12 +2,12 @@ local colors = require("colors")
 local icons = require("icons")
 local settings = require("settings")
 
--- Padding item required because of bracket
-
--- sbar.add("item", { position = "right", icon = { string = " " }, width = 10 })
+-- F7: the Apple icon now toggles a compact settings popup.
+-- (The old click_script opened the native Apple menu via the menus helper;
+-- requested behavior is an in-bar settings popup instead.)
 
 local M = {}
-M.apple = sbar.add("item", {
+M.apple = sbar.add("item", "menu.apple", {
 	icon = {
 		font = { size = 18.0 },
 		string = icons.apple,
@@ -21,7 +21,32 @@ M.apple = sbar.add("item", {
 	},
 	padding_left = 3,
 	padding_right = 0,
-	click_script = "$CONFIG_DIR/helpers/menus/bin/menus -s 0",
+	popup = { align = "left" },
 })
+
+sbar.add("item", "menu.apple.sysprefs", {
+	position = "popup." .. M.apple.name,
+	width = 150,
+	align = "left",
+	label = { string = "System Settings", color = colors.white, padding_left = 8 },
+	click_script = "open -a 'System Settings'",
+})
+
+sbar.add("item", "menu.apple.reload", {
+	position = "popup." .. M.apple.name,
+	width = 150,
+	align = "left",
+	label = { string = "Reload SketchyBar", color = colors.white, padding_left = 8 },
+	click_script = "sketchybar --reload",
+})
+
+M.apple:subscribe("mouse.clicked", function()
+	local drawing = M.apple:query().popup.drawing
+	M.apple:set({ popup = { drawing = "toggle" } })
+end)
+
+M.apple:subscribe("mouse.exited.global", function()
+	M.apple:set({ popup = { drawing = false } })
+end)
 
 return M

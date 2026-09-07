@@ -2,7 +2,6 @@ local battery = require("items.widgets.battery")
 local volume = require("items.widgets.volume")
 local wifi = require("items.widgets.wifi")
 local bluetooth = require("items.widgets.bluetooth")
-local cpu_and_temp = require("items.widgets.cpu_and_temp")
 local weather = require("items.weather")
 -- local workspaces = require("items.spaces_aero")
 -- local workspaces = require("items.spaces_yabai_dev")
@@ -26,8 +25,6 @@ local glass_capsule = {
 }
 
 sbar.add("bracket", {
-	cpu_and_temp.cpu.name,
-	cpu_and_temp.temp.name,
 	wifi.wifi.name,
 	wifi.wifi_up.name,
 	wifi.wifi_down.name,
