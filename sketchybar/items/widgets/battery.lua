@@ -2,6 +2,8 @@ local icons = require("icons")
 local colors = require("colors")
 local settings = require("settings")
 
+-- Battery display (Caffeinate feature skipped per user request).
+
 local M = {}
 
 M.battery = sbar.add("item", "widgets.battery", {
@@ -14,21 +16,6 @@ M.battery = sbar.add("item", "widgets.battery", {
 	},
 	label = { font = { family = settings.font.numbers } },
 	update_freq = 120,
-	popup = { align = "center" },
-})
-
-M.remaining_time = sbar.add("item", {
-	position = "popup." .. M.battery.name,
-	icon = {
-		string = "Time remaining:",
-		width = 100,
-		align = "left",
-	},
-	label = {
-		string = "??:??h",
-		width = 100,
-		align = "right",
-	},
 })
 
 M.battery:subscribe({ "routine", "power_source_change", "system_woke" }, function()
@@ -43,7 +30,7 @@ M.battery:subscribe({ "routine", "power_source_change", "system_woke" }, functio
 		end
 
 		local color = colors.green
-		local charging, _, _ = batt_info:find("AC Power")
+		local charging = batt_info:find("AC Power")
 
 		if charging then
 			icon = icons.battery.charging
@@ -77,30 +64,5 @@ M.battery:subscribe({ "routine", "power_source_change", "system_woke" }, functio
 		})
 	end)
 end)
-
-M.battery:subscribe("mouse.clicked", function(env)
-	local drawing = M.battery:query().popup.drawing
-	M.battery:set({ popup = { drawing = "toggle" } })
-
-	if drawing == "off" then
-		sbar.exec("pmset -g batt", function(batt_info)
-			local found, _, remaining = batt_info:find(" (%d+:%d+) remaining")
-			local label = found and remaining .. "h" or "No estimate"
-			M.remaining_time:set({ label = label })
-		end)
-	end
-end)
-
--- sbar.add("bracket", "widgets.battery.bracket", { M.battery.name }, {
--- 	background = {
--- 		-- color = colors.bg3,
--- 		-- color = colors.with_alpha(colors.bg1, colors.transparency),
--- 	},
--- })
---
--- sbar.add("item", "widgets.battery.padding", {
--- 	position = "right",
--- 	width = settings.group_paddings,
--- })
 
 return M

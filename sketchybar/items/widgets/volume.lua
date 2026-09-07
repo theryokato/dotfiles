@@ -75,9 +75,37 @@ local volume_slider = sbar.add("slider", popup_width, {
 			drawing = true,
 		},
 	},
+	-- F3: no click_script — sliders fire "mouse.clicked" with $PERCENTAGE
+	-- continuously while dragging; the subscription below applies volume live.
 	background = { color = colors.bg1, height = 2, y_offset = -20 },
-	click_script = 'osascript -e "set volume output volume $PERCENTAGE"',
 })
+
+-- F3: real-time volume while dragging. Throttled so a fast drag does not
+-- spawn dozens of osascript processes, but still feels continuous:
+--  - first movement applies immediately
+--  - within the same wall-clock second, only jumps of >= 8% are applied
+--  - across seconds, jumps of >= 3% are applied  (~4-5 updates/s max)
+local last_applied = -1
+local last_second = 0
+volume_slider:subscribe("mouse.clicked", function(env)
+	local pct = tonumber(env.PERCENTAGE)
+	if not pct then
+		return
+	end
+	pct = math.max(0, math.min(100, math.floor(pct)))
+	if pct == last_applied then
+		return
+	end
+	local now = os.time()
+	local delta = math.abs(pct - last_applied)
+	local min_delta = (now == last_second) and 8 or 3
+	if delta < min_delta then
+		return
+	end
+	last_applied = pct
+	last_second = now
+	sbar.exec('osascript -e "set volume output volume ' .. pct .. '"')
+end)
 
 V.volume_percent:subscribe("volume_change", function(env)
 	local volume = tonumber(env.INFO)
