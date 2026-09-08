@@ -2,7 +2,7 @@
 
 # Local Spotify Connect source for the SketchyBar music widget.
 #
-# Replaces the Web API daemon (spotify_connect.sh, kept dormant) with the same
+# Replaces a Web API daemon with the same
 # local mechanism simple-bar uses: Spotify Desktop's AppleScript dictionary
 # follows the ACTIVE Spotify Connect session, so a phone playback session is
 # visible locally with full metadata AND live progress (verified: AppleScript
