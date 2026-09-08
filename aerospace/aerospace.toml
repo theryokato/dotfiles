@@ -1,8 +1,8 @@
-exec-on-workspace-change = [
-  '/opt/homebrew/bin/bash',
-  '-c',
-  '/opt/homebrew/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
-]
+# exec-on-workspace-change = [
+#   '/opt/homebrew/bin/bash',
+#   '-c',
+#   '/opt/homebrew/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
+# ]
 
 
 # Place a copy of this config to ~/.aerospace.toml
@@ -15,7 +15,10 @@ config-version = 2
 
 # You can use it to add commands that run after AeroSpace startup.
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = []
+# Run the simple-bar status bar (Übersicht widget) together with AeroSpace
+after-startup-command = [
+  'exec-and-forget open -a "Übersicht"',
+]
 
 # Start AeroSpace at login
 start-at-login = false
@@ -39,7 +42,7 @@ default-root-container-layout = 'tiles'
 # Possible values: horizontal|vertical|auto
 # 'auto' means: wide monitor (anything wider than high) gets horizontal orientation,
 #               tall monitor (anything higher than wide) gets vertical orientation
-default-root-container-orientation = 'auto'
+default-root-container-orientation = 'horizontal'
 
 # Mouse follows focus when focused monitor changes
 # Drop it from your config, if you don't like this behavior
@@ -49,9 +52,9 @@ default-root-container-orientation = 'auto'
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 # Trigger sketchybar to redraw active-space highlighting on window focus changes
-on-focus-changed = [
-  'exec-and-forget /opt/homebrew/bin/sketchybar --trigger aerospace_focus_change',
-]
+# on-focus-changed = [
+#   'exec-and-forget /opt/homebrew/bin/sketchybar --trigger aerospace_focus_change',
+# ]
 
 # You can effectively turn off macOS "Hide application" (cmd-h) feature by toggling this flag
 # Useful if you don't use this macOS feature, but accidentally hit cmd-h or cmd-alt-h key
@@ -126,7 +129,6 @@ gaps.outer.right =      1
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#layout
     alt-slash = 'layout tiles horizontal vertical'
-    alt-comma = 'layout accordion horizontal vertical'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#focus
     alt-left = 'focus left'
