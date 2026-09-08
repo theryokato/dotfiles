@@ -673,7 +673,14 @@ M.anchor:subscribe({ "media_update" }, function(env)
 			empty_gen = gen
 			local gen_time = os.time()
 			sbar.delay(1.2, function()
-				if empty_gen == gen and local_time <= gen_time then
+				-- Clear on REAL staleness only, never on a single empty
+				-- payload: media-control's multi-session arbitration emits a
+				-- spurious {} while another app is still playing and the 10s
+				-- poller re-emits the live snapshot right after, so clearing
+				-- here made the widget flap hide/show. Real hides happen via
+				-- the 15s freshness window in source_now().
+				if empty_gen == gen and local_time <= gen_time
+					and (os.time() - local_time) >= 15 then
 					local_has_track = false
 					local_playing = false
 					render()
