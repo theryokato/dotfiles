@@ -22,8 +22,10 @@
 #    still emitted, so the widget can clear itself instead of going stale.
 #  - artworkData is only base64-decoded + written when its checksum changes
 #    (~1Hz stream updates would otherwise re-decode ~800KB every second).
-#  - cached artwork is cleared ONLY on true session-end payloads (no session
-#    identifiers at all) — sparse playing updates keep the current artwork.
+#  - cached artwork is NEVER cleared in the helper: empty/{} payloads can be
+#    spurious under media-control's multi-session arbitration, and a stale
+#    file is harmless (popup hidden, next track overwrites). Writes are
+#    atomic (tmp + mv) so a raced decode can never truncate the file.
 
 ARTWORK_FILE="/tmp/sketchybar_media_artwork_${USER}.jpg"
 last_art_sum="__none__"
@@ -40,18 +42,19 @@ emit_payload() {
 	if [ -n "$art_b64" ]; then
 		art_sum=$(printf '%s' "$art_b64" | cksum | awk '{print $1 "." $2}')
 		if [ "$art_sum" != "$last_art_sum" ]; then
-			printf '%s' "$art_b64" | base64 --decode > "$ARTWORK_FILE" 2>/dev/null \
-				|| : > "$ARTWORK_FILE"
+			# atomic write: decode to a temp file, then rename. A failed or
+			# raced decode can never truncate the previous artwork to 0 bytes.
+			if printf '%s' "$art_b64" | base64 --decode > "$ARTWORK_FILE.tmp" 2>/dev/null; then
+				mv -f "$ARTWORK_FILE.tmp" "$ARTWORK_FILE"
+			fi
 			last_art_sum=$art_sum
 		fi
-	elif ! printf '%s' "$_p" | jq -e 'has("bundleIdentifier") or has("processIdentifier")' >/dev/null 2>&1; then
-		# true session end: clear the cached artwork exactly once. Sparse
-		# session updates (playing flag only) keep the current artwork.
-		if [ "$last_art_sum" != "__none__" ]; then
-			: > "$ARTWORK_FILE"
-			last_art_sum="__none__"
-		fi
 	fi
+	# NOTE: no artwork clearing here. The old "empty payload = session end"
+	# heuristic truncated the artwork to 0 bytes whenever media-control's
+	# multi-session arbitration emitted a spurious {} while another app was
+	# still playing. Stale artwork is harmless: the popup is unreachable
+	# while the widget is hidden and the next track overwrites the file.
 
 	# The JSON is passed as ONE argv element ("INFO=..."), so spaces and
 	# double quotes inside it survive without any escaping. sketchybar only
