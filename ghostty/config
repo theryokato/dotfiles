@@ -3,3 +3,12 @@ font-family = FiraCode Nerd Font
 macos-titlebar-style = hidden
 window-padding-x = 10
 cursor-style = bar
+
+keybind = global:option+space=toggle_quick_terminal
+quick-terminal-position = top
+quick-terminal-size = 40%
+quick-terminal-autohide = true
+
+quick-terminal-size = 50%
+window-padding-x = 12
+window-padding-y = 10
