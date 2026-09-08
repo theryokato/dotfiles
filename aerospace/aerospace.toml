@@ -31,6 +31,7 @@ config-version = 2
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 # Run the simple-bar status bar (Übersicht widget) together with AeroSpace
 after-startup-command = [
+  'layout tiles',
   'exec-and-forget open -a "Übersicht"',
 ]
 
