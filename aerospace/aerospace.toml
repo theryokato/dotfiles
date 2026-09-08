@@ -4,6 +4,20 @@
 #   '/opt/homebrew/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
 # ]
 
+# Notify simple-bar-server so simple-bar refreshes its AeroSpace spaces widget.
+# Uses bash /dev/tcp instead of curl (~35ms faster per event); the script is
+# kept in ~/.config/aerospace/ (dotfiles-tracked). Workspace switches pass
+# $AEROSPACE_FOCUSED_WORKSPACE so simple-bar moves the highlight optimistically
+# before its background refetch.
+on-focus-changed = [
+  "exec-and-forget /bin/bash /Users/lonelysol/.config/aerospace/simple-bar-refresh.sh",
+]
+
+exec-on-workspace-change = [
+  '/bin/bash',
+  '-c',
+  '/bin/bash /Users/lonelysol/.config/aerospace/simple-bar-refresh.sh "$AEROSPACE_FOCUSED_WORKSPACE"',
+]
 
 # Place a copy of this config to ~/.aerospace.toml
 # After that, you can edit ~/.aerospace.toml to your liking
