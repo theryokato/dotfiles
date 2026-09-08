@@ -7,10 +7,12 @@ local settings = require("settings")
 --
 --   local  : helpers/media_control.sh stream (media_update) — local Spotify,
 --            Brave/browsers, Apple Music, Cider, any whitelisted Mac player.
---   remote : helpers/spotify_connect.sh daemon (spotify_update) — Spotify
---            Connect playback on phones/speakers via the Spotify Web API.
---            Metadata only: phone audio NEVER reaches the Mac, so CAVA stays
---            frozen/dimmed for remote playback (no fake visualization).
+--   remote : helpers/spotify_local.sh daemon (spotify_update) — Spotify
+--            Connect playback on phones/speakers, detected LOCALLY via
+--            Spotify Desktop's AppleScript dictionary (the simple-bar
+--            mechanism; no Web API/OAuth). Requires the Mac Spotify app to
+--            be open. Metadata only: phone audio NEVER reaches the Mac, so
+--            CAVA stays frozen/dimmed for remote playback (no fake viz).
 --
 --   source selection (deterministic):
 --     local actively playing          -> local wins
@@ -118,7 +120,11 @@ sbar.exec(
 sbar.exec(
 	"pkill -f '[m]edia_control.sh' 2>/dev/null; pkill -f '[m]ediaremote-adapter.pl' 2>/dev/null; $CONFIG_DIR/helpers/media_control.sh"
 )
-sbar.exec("pkill -f '[s]potify_connect.sh' 2>/dev/null; $CONFIG_DIR/helpers/spotify_connect.sh")
+-- local Spotify Connect poller (AppleScript; replaces the Web API daemon,
+-- spotify_connect.sh, which is kept dormant as an offline fallback)
+sbar.exec(
+	"pkill -f '[s]potify_connect.sh' 2>/dev/null; pkill -f '[s]potify_local.sh' 2>/dev/null; $CONFIG_DIR/helpers/spotify_local.sh"
+)
 
 -- PART2
 
@@ -442,7 +448,12 @@ local function update_progress()
 	if duration and duration > 0 then
 		pct = math.max(0, math.min(100, (elapsed / duration) * 100))
 	end
-	M.popup_slider:set({ slider = { percentage = pct } })
+	-- livestreams / unknown duration: hide the progress row instead of
+	-- showing a meaningless bar
+	M.popup_slider:set({
+		slider = { percentage = pct },
+		drawing = duration ~= nil and duration > 0,
+	})
 	M.popup_time:set({
 		icon = { string = fmt_time(elapsed) },
 		label = { string = (duration and duration > 0) and fmt_time(duration) or "" },
@@ -607,8 +618,8 @@ local function render()
 		end
 	end
 
-	elapsed = tonumber(info.elapsed or info.elapsedTime) or elapsed
-	duration = tonumber(info.duration) or duration
+	elapsed = tonumber(info.elapsed or info.elapsedTime) or 0
+	duration = tonumber(info.duration) or 0
 	update_progress()
 end
 
@@ -636,6 +647,25 @@ M.anchor:subscribe({ "media_update" }, function(env)
 	local title = info.title
 
 	if title == nil or title == "" then
+		-- Sparse keep-alive payloads (browsers emit {playing, bundleIdentifier}
+		-- WITHOUT metadata on session activation/resume, and the stream is
+		-- silent during steady playback): refresh the freshness of the current
+		-- track instead of treating this as "no track". Progress fields, when
+		-- present, are adopted.
+		if app_key ~= nil and whitelist[app_key] and local_has_track
+			and info.playing ~= nil then
+			local_playing = (info.playing == true or info.playing == "true" or info.playing == 1)
+			local_time = os.time()
+			if info.elapsedTime ~= nil then
+				elapsed = tonumber(info.elapsedTime) or elapsed
+			end
+			if info.duration ~= nil then
+				duration = tonumber(info.duration) or duration
+			end
+			empty_gen = empty_gen + 1 -- cancel any pending hide
+			render()
+			return
+		end
 		-- transient null-title payloads occur on track transitions; only clear
 		-- the local source when no real track event follows within ~1.2s
 		if app_key == nil or whitelist[app_key] then
@@ -762,7 +792,7 @@ M.popup_play:subscribe("mouse.clicked", function()
 			label = { string = playing and "Pause" or "Play" },
 		})
 		M.anchor:set({ icon = { string = playing and pause_icon or play_icon } })
-		sbar.exec("$CONFIG_DIR/helpers/spotify_connect.sh control " .. (playing and "play" or "pause"))
+		sbar.exec("$CONFIG_DIR/helpers/spotify_local.sh control " .. (playing and "play" or "pause"))
 		return
 	end
 	playing = not playing
@@ -777,7 +807,7 @@ end)
 M.popup_prev:subscribe("mouse.clicked", function()
 	if current_source == "remote" then
 		if remote_controls_ok then
-			sbar.exec("$CONFIG_DIR/helpers/spotify_connect.sh control previous")
+			sbar.exec("$CONFIG_DIR/helpers/spotify_local.sh control previous")
 		end
 		return
 	end
@@ -787,7 +817,7 @@ end)
 M.popup_next:subscribe("mouse.clicked", function()
 	if current_source == "remote" then
 		if remote_controls_ok then
-			sbar.exec("$CONFIG_DIR/helpers/spotify_connect.sh control next")
+			sbar.exec("$CONFIG_DIR/helpers/spotify_local.sh control next")
 		end
 		return
 	end
