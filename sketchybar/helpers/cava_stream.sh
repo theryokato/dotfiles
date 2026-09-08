@@ -16,6 +16,21 @@
 PATH="/opt/homebrew/bin:$PATH"
 FREEZE="/tmp/sketchybar_cava_frozen_${USER}"
 
+# Wait briefly for the media.vis items (items/media.lua spawns us BEFORE it
+# creates them in the same load). If they never appear -- e.g. the Lua config
+# failed mid-load -- exit ONCE instead of erroring per frame at 30fps
+# (~21k 'Item not found' lines per session).
+n=0
+while [ "$n" -lt 20 ]; do
+	sketchybar --query media.vis1 >/dev/null 2>&1 && break
+	n=$((n + 1))
+	sleep 0.5
+done
+if [ "$n" -ge 20 ]; then
+	echo "cava_stream: media.vis items missing after 10s, exiting" >&2
+	exit 0
+fi
+
 cava -p "$HOME/.config/sketchybar/helpers/cava.conf" | while IFS= read -r frame; do
 	[ -f "$FREEZE" ] && continue
 
