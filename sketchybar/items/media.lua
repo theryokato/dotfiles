@@ -1,4 +1,3 @@
-local icons = require("icons")
 local colors = require("colors")
 local settings = require("settings")
 
@@ -62,8 +61,17 @@ local app_names = {
 	["com.apple.Safari"] = "Safari",
 }
 
-local play_icon = icons.media.play
-local pause_icon = icons.media.pause
+-- Transport glyphs: the SF Symbols PUA codepoints (\u{100284} etc.) resolve
+-- to the wrong glyph under the bar's SF Pro font (the dedicated SF Symbols
+-- font is not installed). The installed SymbolsNerdFont family has proper
+-- transport glyphs, so use those with an explicit font family, independent
+-- of the global sf-symbols/NerdFont icon setting.
+local media_icon_font = { family = "SymbolsNerdFont", size = 12 }
+local media_icon_font_lg = { family = "SymbolsNerdFont", size = 13 }
+local play_icon = "\u{f04b}" -- nerdfont play
+local pause_icon = "\u{f04c}" -- nerdfont pause
+local prev_icon = "\u{f04a}" -- nerdfont previous
+local next_icon = "\u{f04e}" -- nerdfont next
 
 -- Catppuccin gradient across the 8 bars (existing palette, no new colors)
 local bar_colors = {
@@ -140,7 +148,7 @@ M.anchor = sbar.add("item", "media.anchor", {
 	position = "left",
 	icon = {
 		string = pause_icon,
-		font = { size = 12 },
+		font = media_icon_font,
 		color = colors.white,
 		padding_left = 2,
 		padding_right = 1,
@@ -346,8 +354,8 @@ M.popup_prev = sbar.add("item", "media.popup.prev", {
 	padding_left = 0,
 	padding_right = 0,
 	icon = {
-		string = icons.media.prev,
-		font = { size = 13 },
+		string = prev_icon,
+		font = media_icon_font_lg,
 		width = 50,
 		align = "center",
 		padding_left = 4,
@@ -367,7 +375,7 @@ M.popup_play = sbar.add("item", "media.popup.play", {
 	padding_right = 0,
 	icon = {
 		string = play_icon,
-		font = { size = 13 },
+		font = media_icon_font_lg,
 		width = 50,
 		align = "center",
 		padding_left = 4,
@@ -386,8 +394,8 @@ M.popup_next = sbar.add("item", "media.popup.next", {
 	padding_left = 0,
 	padding_right = 0,
 	icon = {
-		string = icons.media.next,
-		font = { size = 13 },
+		string = next_icon,
+		font = media_icon_font_lg,
 		width = 50,
 		align = "center",
 		padding_left = 4,
