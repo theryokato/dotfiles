@@ -7,36 +7,36 @@
 #
 # Spawned from items/media.lua (same pattern as cpu_load/network_load).
 #
+# Event model (verified against media-control 0.7.7):
+#   - stream payloads are FULL on track/session changes, SPARSE on session
+#     activation/resume ({playing, bundleIdentifier}, no metadata) and {} on
+#     session end. The stream is SILENT during steady playback — browsers
+#     (Brave/YouTube etc.) only emit on changes.
+#   - Therefore a 10s co-poll re-emits a full snapshot while playing=true and
+#     the whole-second position changed: keeps the widget's freshness window
+#     alive, ticks popup progress, and self-heals a dead stream. Paused media
+#     never triggers poller emits.
+#
 # Perf/UX notes:
 #  - --allow-missing-title: media with no title (e.g. playback stopped) is
 #    still emitted, so the widget can clear itself instead of going stale.
 #  - artworkData is only base64-decoded + written when its checksum changes
 #    (~1Hz stream updates would otherwise re-decode ~800KB every second).
+#  - cached artwork is cleared ONLY on true session-end payloads (no session
+#    identifiers at all) — sparse playing updates keep the current artwork.
 
 ARTWORK_FILE="/tmp/sketchybar_media_artwork_${USER}.jpg"
 last_art_sum="__none__"
 
-# "refresh" mode: emit one full snapshot now (used by the paused-state watchdog
-# in items/media.lua to self-heal missed stream events, e.g. slow resumes)
-if [ "$1" = "refresh" ]; then
-	payload=$(media-control get 2>/dev/null | jq -c 'del(.artworkData) + {artwork_path: $f}' --arg f "$ARTWORK_FILE" 2>/dev/null)
-	[ -n "$payload" ] && /opt/homebrew/bin/sketchybar --trigger media_update "INFO=$payload"
-	exit 0
-fi
+emit() {
+	/opt/homebrew/bin/sketchybar --trigger media_update "INFO=$1"
+}
 
-media-control stream --no-diff --allow-missing-title --debounce=250 | while IFS= read -r line; do
-	[ -n "$line" ] || continue
-	# stream emits an envelope {"type":"data","diff":...,"payload":{...}};
-	# unwrap .payload and skip empty lines (empty {} payloads ARE passed on so
-	# the widget can react to "nothing playing")
-	payload=$(printf '%s' "$line" | jq -c '.payload // empty' 2>/dev/null)
-	[ -n "$payload" ] || continue
+# artwork handling + re-emit, shared by the stream loop and the poller
+emit_payload() {
+	_p=$1
 
-	# sketchybar only decodes artwork for its INTERNAL media_change event,
-	# which is dead on macOS 26 — external media_change triggers are swallowed.
-	# So we use a custom event and decode the artwork to a file ourselves;
-	# base64 alphabet is shell-safe and it goes through a pipe (no ARG_MAX issues).
-	art_b64=$(printf '%s' "$payload" | jq -r '.artworkData // empty' 2>/dev/null)
+	art_b64=$(printf '%s' "$_p" | jq -r '.artworkData // empty' 2>/dev/null)
 	if [ -n "$art_b64" ]; then
 		art_sum=$(printf '%s' "$art_b64" | cksum | awk '{print $1 "." $2}')
 		if [ "$art_sum" != "$last_art_sum" ]; then
@@ -44,15 +44,54 @@ media-control stream --no-diff --allow-missing-title --debounce=250 | while IFS=
 				|| : > "$ARTWORK_FILE"
 			last_art_sum=$art_sum
 		fi
-	elif [ "$last_art_sum" != "__none__" ]; then
-		# track without artwork: clear the cached file exactly once
-		: > "$ARTWORK_FILE"
-		last_art_sum="__none__"
+	elif ! printf '%s' "$_p" | jq -e 'has("bundleIdentifier") or has("processIdentifier")' >/dev/null 2>&1; then
+		# true session end: clear the cached artwork exactly once. Sparse
+		# session updates (playing flag only) keep the current artwork.
+		if [ "$last_art_sum" != "__none__" ]; then
+			: > "$ARTWORK_FILE"
+			last_art_sum="__none__"
+		fi
 	fi
 
-	payload=$(printf '%s' "$payload" | jq -c 'del(.artworkData) + {artwork_path: $f}' --arg f "$ARTWORK_FILE")
+	# The JSON is passed as ONE argv element ("INFO=..."), so spaces and
+	# double quotes inside it survive without any escaping. sketchybar only
+	# decodes artwork for its INTERNAL media_change event (dead on macOS 26),
+# so artwork is decoded here and passed by path.
+	_p=$(printf '%s' "$_p" | jq -c 'del(.artworkData) + {artwork_path: $f}' --arg f "$ARTWORK_FILE")
+	emit "$_p"
+}
 
-	# The JSON is passed as ONE argv element ("INFO=..."), so spaces and double
-	# quotes inside it survive without any escaping.
-	/opt/homebrew/bin/sketchybar --trigger media_update "INFO=$payload"
+# "refresh" mode: emit one full snapshot now (used by the paused-state watchdog
+# in items/media.lua to self-heal missed stream events, e.g. slow resumes)
+if [ "$1" = "refresh" ]; then
+	payload=$(media-control get 2>/dev/null)
+	[ -n "$payload" ] && emit_payload "$payload"
+	exit 0
+fi
+
+# STREAM: event-driven path
+media-control stream --no-diff --allow-missing-title --debounce=250 | while IFS= read -r line; do
+	[ -n "$line" ] || continue
+	# stream emits an envelope {"type":"data","diff":...,"payload":{...}};
+	# unwrap .payload and skip empty lines (empty {} payloads ARE passed on so
+	# the widget can react to "nothing playing")
+	payload=$(printf '%s' "$line" | jq -c '.payload // empty' 2>/dev/null)
+	[ -n "$payload" ] || continue
+	emit_payload "$payload"
+done &
+
+# POLL: keep-alive for silent steady playback (see header). One `get` per
+# 10s while playing; emits only when the whole-second position changed.
+last_poll_elapsed="__none__"
+while :; do
+	sleep 10
+	payload=$(media-control get 2>/dev/null)
+	[ -n "$payload" ] || continue
+	playing=$(printf '%s' "$payload" | jq -r '.playing // false' 2>/dev/null)
+	[ "$playing" = "true" ] || continue
+	el=$(printf '%s' "$payload" | jq -r '.elapsedTime // 0 | floor' 2>/dev/null)
+	case "${el:-}" in '' | *[!0-9]*) continue ;; esac
+	[ "$el" = "$last_poll_elapsed" ] && continue
+	last_poll_elapsed=$el
+	emit_payload "$payload"
 done
