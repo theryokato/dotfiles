@@ -23,7 +23,7 @@ local settings = require("settings")
 --            the EXISTING "BlackHole 2ch" source) + state glyph (popup host).
 --   popup  : artwork, title/artist/album, source-or-device row, seekable
 --            progress, transport rows. Controls route to the active source:
---            local -> media-control, remote -> Spotify Web API.
+--            local -> media-control, remote -> spotify_local.sh control.
 -- -----------------------------------------------------------------------------
 
 local FREEZE_FILE = "/tmp/sketchybar_cava_frozen_" .. (os.getenv("USER") or "user")
@@ -128,8 +128,7 @@ sbar.exec(
 sbar.exec(
 	"pkill -f '[m]edia_control.sh' 2>/dev/null; pkill -f '[m]ediaremote-adapter.pl' 2>/dev/null; $CONFIG_DIR/helpers/media_control.sh"
 )
--- local Spotify Connect poller (AppleScript; replaces the Web API daemon,
--- spotify_connect.sh, which is kept dormant as an offline fallback)
+-- local Spotify Connect poller (AppleScript dictionary; local-only)
 sbar.exec(
 	"pkill -f '[s]potify_connect.sh' 2>/dev/null; pkill -f '[s]potify_local.sh' 2>/dev/null; $CONFIG_DIR/helpers/spotify_local.sh"
 )
