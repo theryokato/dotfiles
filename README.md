@@ -8,7 +8,6 @@ the directory itself, so there are no symlinks or a dotfiles manager involved.
 | Path | What it configures |
 | --- | --- |
 | `aerospace/` | AeroSpace tiling window manager; `simple-bar-refresh.sh` notifies `simple-bar-server` to update the spaces widget on focus/workspace change |
-| `sketchybar/` | SketchyBar status bar written in Lua (widgets, popups, media/artwork, calendar, weather, mic, volume) plus C event providers in `helpers/event_providers/` |
 | `simple-bar/`, `simple-bar-server/` | Nested app repos (own Git remotes) that render the AeroSpace spaces widget; not tracked here |
 | `colors.sh` | Catppuccin Macchiato palette exported as hex environment variables (`COLOR_*`) |
 | `icons.sh` | Nerd Font glyphs exported as environment variables (`ICON_*`) |
@@ -38,11 +37,10 @@ git -C ~/.config pull   # update
 
 App-specific dependencies live next to their config:
 
-- SketchyBar and its dependencies (fonts, helper binaries): `sketchybar/helpers/install.sh`
 - `simple-bar-server` (nested repo) is expected at `~/.config/simple-bar-server`
 
 ## Not tracked
 
 `.gitignore` excludes machine-specific and credential-bearing paths: `gh/`,
-`github-copilot/`, `configstore/`, `gnupg/`, `gpg/`, wallpapers, SketchyBar
-helper binaries, and the nested `simple-bar*` app repos.
+`github-copilot/`, `configstore/`, `gnupg/`, `gpg/`, wallpapers, and the nested
+`simple-bar*` app repos.
