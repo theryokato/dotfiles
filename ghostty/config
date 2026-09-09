@@ -1,4 +1,4 @@
-theme = catppuccin-macchiato.conf
+theme = base16-catppuccin-macchiato
 font-family = FiraCode Nerd Font
 macos-titlebar-style = hidden
 window-padding-x = 10
@@ -12,3 +12,5 @@ quick-terminal-autohide = true
 quick-terminal-size = 50%
 window-padding-x = 12
 window-padding-y = 10
+
+background-opacity = 0.9

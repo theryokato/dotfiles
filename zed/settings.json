@@ -74,8 +74,8 @@
   "buffer_font_size": 13.0,
   "theme": {
     "mode": "system",
-    "light": "One Light",
-    "dark": "Catppuccin Frappé",
+    "light": "Tinty",
+    "dark": "Tinty",
   },
     "languages": {
       "Python": {
