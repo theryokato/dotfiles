@@ -8,10 +8,6 @@ gpg/
 # machine-local noise / rebuildable binaries
 .DS_Store
 wallpapers/
-sketchybar/helpers/event_providers/bin/
-sketchybar/helpers/menus/bin/
-sketchybar/helpers/event_providers/cpu_load/bin/
-sketchybar/helpers/event_providers/network_load/bin/
 
 # self-contained app repos with their own remotes (nested git repos)
 simple-bar/
