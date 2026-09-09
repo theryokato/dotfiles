@@ -1,0 +1,34 @@
+# Tinty configuration — applies the active base16 scheme across apps.
+# Scheme is applied with `tinty apply <scheme>`; hooks below regenerate
+# derived configs. See https://github.com/tinted-theming/tinty
+
+# Ghostty and Zed are handled in ~/.config/tinty/hooks/apply.sh (chained
+# off the btop hook below). Ghostty has no config auto-watch, so apply.sh
+# rewrites the `theme =` line for the next manual reload (cmd+shift+,),
+# with an optional keystroke driver (TINTY_GHOSTTY_AUTO_RELOAD=1). Zed
+# gets a fixed-name theme (tinty.json / "Tinty") so its settings.json
+# never churns and its theme registry stays stable.
+# The [[items]] entries have no hooks: they exist so `tinty sync` keeps
+# the template repos cloned into tinty's data dir for apply.sh to read.
+[[items]]
+path = "https://github.com/tinted-theming/tinted-terminal"
+name = "tinted-ghostty"
+themes-dir = "themes/ghostty"
+supported-systems = ["base16", "base24"]
+
+[[items]]
+path = "https://github.com/tinted-theming/tinted-zed"
+name = "tinted-zed"
+themes-dir = "themes"
+supported-systems = ["base16", "base24"]
+
+# btop: community template (Sourcehut); copy the generated .theme to a
+# fixed name referenced by color_theme in btop.conf.
+[[items]]
+path = "https://git.sr.ht/~blueingreen/base16-btop"
+name = "base16-btop"
+themes-dir = "colors"
+supported-systems = ["base16"]
+# apply.sh (Ghostty/Zed/simple-bar/colors.sh) runs last, after tinty has
+# synced the scheme files into its data dir.
+hook = "cp -f \"$TINTY_THEME_FILE_PATH\" \"$HOME/.config/btop/themes/tinty.theme\" && \"$HOME/.config/tinty/hooks/apply.sh\""

@@ -1,0 +1,90 @@
+#
+#
+# name: Catppuccin Macchiato
+# author: https://github.com/catppuccin/catppuccin
+# slug: catppuccin-macchiato
+# slug-underscored: catppuccin_macchiato
+# system: base16
+# variant: dark
+# is-dark-variant: true
+#
+#
+
+# Main bg
+theme[main_bg]="#24273a"
+
+# Main text color
+theme[main_fg]="#cad3f5"
+
+# Title color for boxes
+theme[title]="#cad3f5"
+
+# Highlight color for keyboard shortcuts
+theme[hi_fg]="#8aadf4"
+
+# Background color of selected item in processes box
+theme[selected_bg]="#1e2030"
+
+# Foreground color of selected item in processes box
+theme[selected_fg]="#cad3f5"
+
+# Color of inactive/disabled text
+theme[inactive_fg]="#5b6078"
+
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
+theme[proc_misc]="#8aadf4"
+
+# Cpu box outline color
+theme[cpu_box]="#5b6078"
+
+# Memory/disks box outline color
+theme[mem_box]="#5b6078"
+
+# Net up/down box outline color
+theme[net_box]="#5b6078"
+
+# Processes box outline color
+theme[proc_box]="#5b6078"
+
+# Box divider line and small boxes line color
+theme[div_line]="#5b6078"
+
+# Temperature graph colors
+theme[temp_start]="#a6da95"
+theme[temp_mid]="#eed49f"
+theme[temp_end]="#ed8796"
+
+# CPU graph colors
+theme[cpu_start]="#a6da95"
+theme[cpu_mid]="#eed49f"
+theme[cpu_end]="#ed8796"
+
+# Mem/Disk free meter
+theme[free_start]="#a6da95"
+theme[free_mid]="#eed49f"
+theme[free_end]="#ed8796"
+
+# Mem/Disk cached meter
+theme[cached_start]="#a6da95"
+theme[cached_mid]="#eed49f"
+theme[cached_end]="#ed8796"
+
+# Mem/Disk available meter
+theme[available_start]="#a6da95"
+theme[available_mid]="#eed49f"
+theme[available_end]="#ed8796"
+
+# Mem/Disk used meter
+theme[used_start]="#a6da95"
+theme[used_mid]="#eed49f"
+theme[used_end]="#ed8796"
+
+# Download graph colors
+theme[download_start]="#a6da95"
+theme[download_mid]="#eed49f"
+theme[download_end]="#ed8796"
+
+# Upload graph colors
+theme[upload_start]="#a6da95"
+theme[upload_mid]="#eed49f"
+theme[upload_end]="#ed8796"
