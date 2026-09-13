@@ -3,6 +3,16 @@ use = "yazi-rs/plugins:mount"
 rev = "4dc7f1b"
 hash = "b95f898e6dc60b52edbc415952e14395"
 
+[[plugin.deps]]
+use = "yazi-rs/plugins:piper"
+rev = "58c4f4e"
+hash = "45a533508a9840cc5a10cf6129f63e6a"
+
+[[plugin.deps]]
+use = "AnirudhG07/rich-preview"
+rev = "02597c4"
+hash = "33982a6e2d6df07619a2a0fc163a0950"
+
 [[flavor.deps]]
 use = "yazi-rs/flavors:catppuccin-macchiato"
 rev = "20b47bf"
