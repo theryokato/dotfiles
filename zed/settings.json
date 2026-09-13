@@ -14,7 +14,7 @@
   "cli_default_open_behavior": "new_window",
   "context_servers": {
     "mcp-server-exa-search": {
-      "enabled": true,
+      "enabled": false,
       "remote": false,
       "settings": {
         "exa_api_key": null
