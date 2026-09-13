@@ -14,4 +14,11 @@ simple-bar/
 simple-bar-server/
 
 # Zed LMDB runtime databases (lock file churns constantly)
-zed/prompts/*.mdb/
+zed/prompts/**
+
+# local runtime artifacts / backups (churn, leak home paths)
+aerospace/*.bak
+micro/backups/
+micro/buffers/history
+xbuild/
+karabiner/automatic_backups/
