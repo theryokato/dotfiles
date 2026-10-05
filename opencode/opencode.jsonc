@@ -1,0 +1,185 @@
+// Requires account-level ZDR and data-collection denial in OpenRouter.
+// Provider fallback stays within the selected model; no cross-model error fallback.
+// DeepSeek and MiMo provider price ceilings are USD per million tokens.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "enabled_providers": [
+    "openrouter"
+  ],
+  "share": "disabled",
+  "model": "openrouter/z-ai/glm-5.3-flash",
+  "default_agent": "build",
+  "providers": {
+    "openrouter": {
+      "models": {
+        "openai/gpt-6-luna": {
+          "name": "openai/gpt-6-luna",
+          "settings": {
+            "provider": {
+              "allow_fallbacks": true,
+              "require_parameters": true
+            },
+            "reasoning": {
+              "effort": "low"
+            }
+          },
+          "variants": [
+            { "id": "none", "settings": { "reasoning": { "effort": "none" } } },
+            { "id": "low", "settings": { "reasoning": { "effort": "low" } } },
+            { "id": "medium", "settings": { "reasoning": { "effort": "medium" } } },
+            { "id": "high", "settings": { "reasoning": { "effort": "high" } } },
+            { "id": "xhigh", "settings": { "reasoning": { "effort": "xhigh" } } },
+            { "id": "max", "settings": { "reasoning": { "effort": "max" } } }
+          ]
+        },
+        "z-ai/glm-5.3-flash": {
+          "name": "z-ai/glm-5.3-flash",
+          "settings": {
+            "provider": {
+              "allow_fallbacks": true,
+              "require_parameters": true
+            },
+            "reasoning": {
+              "effort": "high"
+            }
+          },
+          "variants": [
+            { "id": "low", "settings": { "reasoning": { "effort": "low" } } },
+            { "id": "high", "settings": { "reasoning": { "effort": "high" } } },
+            { "id": "max", "settings": { "reasoning": { "effort": "max" } } }
+          ]
+        },
+        "xiaomi/mimo-v2.6-pro": {
+          "name": "MiMo-V2.6-Pro",
+          "settings": {
+            "provider": {
+              "allow_fallbacks": true,
+              "require_parameters": true,
+              "max_price": {
+                "prompt": 0.45,
+                "completion": 0.9
+              }
+            },
+            "reasoning": {
+              "enabled": true
+            }
+          }
+        },
+        "deepseek/deepseek-v4-flash-0731": {
+          "name": "DeepSeek V4 Flash 0731",
+          "settings": {
+            "provider": {
+              "allow_fallbacks": true,
+              "require_parameters": true,
+              "max_price": {
+                "prompt": 0.15,
+                "completion": 0.3
+              }
+            },
+            "reasoning": {
+              "enabled": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "agents": {
+    "build": {
+      "model": "openrouter/z-ai/glm-5.3-flash#high",
+      "system": "Read repository instructions and inspect relevant code before changing it. Verify unfamiliar APIs against installed source or official documentation. Make the smallest complete change. Run relevant checks and report actual results. Never claim completion or tests without evidence. Automatically delegate with the Task tool by task type: tiny for bounded extraction, classification, text transformations and commit-message drafts; explore for repository navigation and code searches; general for bounded independent implementation work with clear requirements and executable checks; advisor for nontrivial planning, architecture and cross-subsystem tradeoffs; research for unfamiliar libraries, API behavior and technical facts requiring verification; review for requested reviews and independent review of consequential or security-sensitive changes; escalation for intrinsically difficult debugging, systems reasoning or complex implementation. Handle routine coding and straightforward debugging yourself. Keep trivial tasks inline when delegation overhead exceeds the work. Give delegates bounded objectives, relevant paths, evidence, constraints and expected outputs. Incorporate their findings and verify results. Never assign overlapping files to concurrent writers. Do not ask the user to select models. Respect tool permissions. Choose specialists by task requirements, without a fixed failure-count trigger. Minimize delegated context: send relevant files or excerpts, not the full transcript. Avoid redundant specialist calls. Request concise conclusions and evidence.",
+      "permissions": [
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "tiny", "effect": "allow" },
+        { "action": "subagent", "resource": "explore", "effect": "allow" },
+        { "action": "subagent", "resource": "advisor", "effect": "allow" },
+        { "action": "subagent", "resource": "research", "effect": "allow" },
+        { "action": "subagent", "resource": "review", "effect": "allow" },
+        { "action": "subagent", "resource": "escalation", "effect": "allow" },
+        { "action": "subagent", "resource": "general", "effect": "allow" }
+      ]
+    },
+    "plan": {
+      "model": "openrouter/xiaomi/mimo-v2.6-pro"
+    },
+    "general": {
+      "model": "openrouter/deepseek/deepseek-v4-flash-0731",
+      "system": "Read repository instructions and inspect relevant code before changing it. Verify unfamiliar APIs against installed source or official documentation. Make the smallest complete change. Run relevant checks and report actual results. Never claim completion or tests without evidence. Automatically delegate with the Task tool by task type: tiny for bounded extraction, classification, text transformations and commit-message drafts; explore for repository navigation and code searches; advisor for nontrivial planning, architecture and cross-subsystem tradeoffs; research for unfamiliar libraries, API behavior and technical facts requiring verification; review for requested reviews and independent review of consequential or security-sensitive changes; escalation for intrinsically difficult debugging, systems reasoning or complex implementation. Handle routine coding and straightforward debugging yourself. Keep trivial tasks inline when delegation overhead exceeds the work. Give delegates bounded objectives, relevant paths, evidence, constraints and expected outputs. Incorporate their findings and verify results. Never assign overlapping files to concurrent writers. Do not ask the user to select models. Respect tool permissions. Choose specialists by task requirements, without a fixed failure-count trigger. Minimize delegated context: send relevant files or excerpts, not the full transcript. Avoid redundant specialist calls. Request concise conclusions and evidence. Use only existing repository patterns or verified APIs. Treat failing tests as evidence. Do not invent dependencies, paths or configuration keys.",
+      "permissions": [
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "tiny", "effect": "allow" },
+        { "action": "subagent", "resource": "explore", "effect": "allow" },
+        { "action": "subagent", "resource": "advisor", "effect": "allow" },
+        { "action": "subagent", "resource": "research", "effect": "allow" },
+        { "action": "subagent", "resource": "review", "effect": "allow" },
+        { "action": "subagent", "resource": "escalation", "effect": "allow" }
+      ],
+      "description": "Bounded implementation and parallel coding tasks with clear requirements, existing repository examples and executable checks. Use research for unfamiliar APIs."
+    },
+    "explore": {
+      "model": "openrouter/z-ai/glm-5.3-flash#low"
+    },
+    "title": {
+      "model": "openrouter/openai/gpt-6-luna#low"
+    },
+    "summary": {
+      "model": "openrouter/z-ai/glm-5.3-flash#low"
+    },
+    "compaction": {
+      "model": "openrouter/z-ai/glm-5.3-flash#low"
+    },
+    "tiny": {
+      "description": "Bounded extraction, file classification, text transformations and commit messages using supplied evidence.",
+      "mode": "subagent",
+      "model": "openrouter/openai/gpt-6-luna#low",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ],
+      "system": "Use only supplied evidence or read tools. Return a concise answer. Do not invent files, symbols, APIs or claims of execution. State missing information explicitly."
+    },
+    "research": {
+      "description": "Verify unfamiliar APIs and technical facts against official documentation and local installed versions.",
+      "mode": "subagent",
+      "model": "openrouter/xiaomi/mimo-v2.6-pro",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "ask" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ],
+      "system": "Prefer installed dependency source and schemas, then official documentation for the exact version. Link sources for external factual claims. Distinguish observed repository facts, documented behavior and inference. Report uncertainty rather than inventing an API."
+    },
+    "review": {
+      "description": "Independent review of correctness, security, scope and test coverage.",
+      "mode": "subagent",
+      "model": "openrouter/xiaomi/mimo-v2.6-pro",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "ask" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ],
+      "system": "Review the actual diff and surrounding code. Prioritize reproducible bugs, security issues and mismatches with requirements. Cite file paths and supporting evidence. State unverified assumptions. Do not edit files."
+    },
+    "escalation": {
+      "description": "Difficult debugging, systems reasoning and complex implementation selected by task requirements, without a failure-count trigger.",
+      "mode": "all",
+      "model": "openrouter/xiaomi/mimo-v2.6-pro",
+      "system": "Read repository instructions and inspect relevant code and supplied evidence. Reproduce failures where feasible. Verify APIs and constraints. When delegated diagnosis, return a root cause and concrete repair plan. When explicitly assigned implementation, make a minimal complete repair and run relevant checks. Coordinate file ownership with the caller. Distinguish verified results from assumptions.",
+      "permissions": [
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ]
+    },
+    "advisor": {
+      "description": "Nontrivial planning, architecture, systems reasoning and cross-subsystem tradeoffs. Return an actionable implementation plan.",
+      "mode": "subagent",
+      "model": "openrouter/xiaomi/mimo-v2.6-pro",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "ask" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ],
+      "system": "Read repository instructions and inspect relevant code. Identify constraints, risks and alternatives. Verify unfamiliar APIs. Return a concise plan, affected files and validation steps. Distinguish evidence from assumptions. Do not modify files."
+    }
+  }
+}

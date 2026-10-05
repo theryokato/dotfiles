@@ -22,3 +22,7 @@ micro/backups/
 micro/buffers/history
 xbuild/
 karabiner/automatic_backups/
+zed/settings_backup.json
+opencode/service.json
+opencode/cli.json
+opencode/*.v1.bak

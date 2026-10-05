@@ -1,0 +1,4 @@
+/node_modules/
+service.json
+cli.json
+*.v1.bak
