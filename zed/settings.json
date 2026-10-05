@@ -7,6 +7,9 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "markdown_preview": {
+    "font_size": 15.0
+  },
   "terminal": {
     "font_family": "FiraCode Nerd Font Mono"
   },
@@ -40,7 +43,6 @@
     },
     "provider": "copilot"
   },
-  "markdown_preview_font_size": 15.0,
   "buffer_font_weight": 400.0,
   "project_panel": {
     "entry_spacing": "comfortable",
@@ -59,15 +61,12 @@
     "github-copilot-cli": {
       "type": "registry"
     },
-    "Cline": {
-          "default_config_options": {
-             "auto_approve": true
-          },
+    "opencode": {
           "type": "custom",
-          "command": "cline",
-          "args": ["--acp"],
-          "env": {}
+          "command": "opencode",
+          "args": ["acp"]
         }
+
   },
   "base_keymap": "VSCode",
   "ui_font_size": 15.0,
@@ -82,8 +81,7 @@
         "language_servers": [
           // Enable ty, disable basedpyright, and enable all
           // other registered language servers (ruff, pylsp, pyright).
-          "ty",
-          "ruff"
+          "pyright"
         ]
       }
 
